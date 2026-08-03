@@ -23,7 +23,7 @@ async function bootstrap() {
   app.enableCors(); // Fixes communication with Frontend
   app.useGlobalInterceptors(new BigIntInterceptor()); // Fixes 500 Error for JSON BigInt serialization
   
-  await app.listen(process.env.PORT ?? 3001); // Re-affirming port based on my prior knowledge
+  const port = Number(process.env.PORT) || 3000;
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
-

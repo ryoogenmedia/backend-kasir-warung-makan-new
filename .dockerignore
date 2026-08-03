@@ -1,0 +1,12 @@
+.git
+.dockerignore
+.env*
+node_modules
+dist
+coverage
+uploads
+.baileys_auth_sender
+.baileys_auth_receiver
+scratch
+test
+*.log
