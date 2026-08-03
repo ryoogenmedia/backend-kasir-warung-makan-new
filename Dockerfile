@@ -34,6 +34,9 @@ ENV PORT=3000
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/package.json ./package.json
+# Keep the schema available for one-off Prisma maintenance commands in Dokploy.
+COPY --from=builder --chown=node:node /app/prisma ./prisma
+COPY --from=builder --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 
 # Uploads and WhatsApp credentials are runtime data. Dokploy volumes can be
 # mounted at these paths without masking the application files in /app.
