@@ -191,7 +191,7 @@ mkdir -p uploads/menus uploads/promos
 npm install -g pm2
 
 # Jalankan aplikasi
-pm2 start dist/main.js --name "rm-siantar-backend"
+pm2 start dist/src/main.js --name "rm-siantar-backend"
 
 # Atau gunakan npm script
 npm run start:prod

@@ -21,6 +21,7 @@ COPY . .
 
 RUN npx prisma generate
 RUN npm run build
+RUN test -f /app/dist/src/main.js
 RUN npm prune --omit=dev
 
 FROM node:22-alpine AS runner
@@ -42,4 +43,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

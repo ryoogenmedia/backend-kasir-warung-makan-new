@@ -187,7 +187,7 @@ Gunakan PM2 agar aplikasi backend NestJS tetap berjalan di background dan otomat
 npm install -g pm2
 
 # Jalankan aplikasi NestJS menggunakan PM2
-pm2 start dist/main.js --name "rm-siantar-backend"
+pm2 start dist/src/main.js --name "rm-siantar-backend"
 
 # Simpan list proses PM2 agar otomatis berjalan saat OS startup
 pm2 save
