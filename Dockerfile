@@ -35,9 +35,12 @@ COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/package.json ./package.json
 
-# Uploads are runtime data. A Dokploy volume can be mounted at /app/uploads.
+# Uploads and WhatsApp credentials are runtime data. Dokploy volumes can be
+# mounted at these paths without masking the application files in /app.
 RUN mkdir -p uploads/menus uploads/promos uploads/payments uploads/branding \
-    && chown -R node:node /app/uploads
+    .baileys_auth_sender .baileys_auth_receiver \
+    && chown -R node:node /app/uploads /app/.baileys_auth_sender \
+    /app/.baileys_auth_receiver
 
 USER node
 
