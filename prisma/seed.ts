@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import mariadb from 'mariadb';
 import 'dotenv/config';
 
 import { seedCategories } from './seeders/CategorySeeder';
@@ -14,19 +13,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not defined');
 }
 
-const pool = mariadb.createPool({
-  uri: process.env.DATABASE_URL,
-  connectionLimit: 5,
-  acquireTimeout: 60000,
-  connectTimeout: 15000,
-});
-const adapter = new PrismaMariaDb(pool);
+const adapter = new PrismaMariaDb({ url: process.env.DATABASE_URL, connectionLimit: 5 });
 const prisma = new PrismaClient({ adapter });
 
 async function cleanDatabase() {
   console.log('🗑️ Cleaning database...');
 
-  // Delete in reverse order of dependencies
   await prisma.delivery.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.review.deleteMany();
@@ -52,12 +44,10 @@ async function main() {
 
     await cleanDatabase();
 
-    // Eksekusi seeder inti (Production & Development)
     await seedCategories(prisma);
     await seedTables(prisma);
     await seedUsers(prisma);
 
-    // Selalu jalankan seeder menu (baik Production maupun Development)
     console.log('📦 Seeding menus...');
     await seedMenus(prisma);
 
@@ -74,7 +64,6 @@ async function main() {
     process.exit(1);
   } finally {
     await prisma.$disconnect();
-    await pool.end();
   }
 }
 

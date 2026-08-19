@@ -2,23 +2,6 @@ import 'dotenv/config';
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import mariadb from 'mariadb';
-
-function createPrismaClient(): PrismaClient {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    // No DATABASE_URL — return a stub client that will fail gracefully on queries
-    return new PrismaClient() as any;
-  }
-  const pool = mariadb.createPool({
-    uri: dbUrl,
-    connectionLimit: 5,
-    acquireTimeout: 30000,
-    connectTimeout: 10000,
-  });
-  const adapter = new PrismaMariaDb(pool);
-  return new PrismaClient({ adapter }) as any;
-}
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -27,13 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
     const dbUrl = process.env.DATABASE_URL;
     if (dbUrl) {
-      const pool = mariadb.createPool({
-        uri: dbUrl,
-        connectionLimit: 5,
-        acquireTimeout: 30000,
-        connectTimeout: 10000,
-      });
-      const adapter = new PrismaMariaDb(pool);
+      const adapter = new PrismaMariaDb({ url: dbUrl, connectionLimit: 5 });
       super({ adapter });
     } else {
       super();
