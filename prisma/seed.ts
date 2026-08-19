@@ -13,7 +13,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not defined');
 }
 
-const adapter = new PrismaMariaDb({ url: process.env.DATABASE_URL, connectionLimit: 5 });
+const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
 const prisma = new PrismaClient({ adapter });
 
 async function cleanDatabase() {

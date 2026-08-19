@@ -10,7 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
     const dbUrl = process.env.DATABASE_URL;
     if (dbUrl) {
-      const adapter = new PrismaMariaDb({ url: dbUrl, connectionLimit: 5 });
+      const adapter = new PrismaMariaDb(dbUrl);
       super({ adapter });
     } else {
       super();
