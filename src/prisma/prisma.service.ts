@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -9,17 +8,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL environment variable is not defined');
     }
-    const dbUrl = new URL(process.env.DATABASE_URL);
-    const adapter = new PrismaMariaDb({
-      host: dbUrl.hostname,
-      port: Number(dbUrl.port) || 3306,
-      user: dbUrl.username,
-      password: decodeURIComponent(dbUrl.password),
-      database: dbUrl.pathname.replace(/^\//, ''),
-      connectionLimit: 20,
-      connectTimeout: 30000,
-    });
-    super({ adapter });
+    super();
   }
 
   async onModuleInit() {
