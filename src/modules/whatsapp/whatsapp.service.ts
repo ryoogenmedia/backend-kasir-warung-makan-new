@@ -5,6 +5,7 @@ import makeWASocket, {
   useMultiFileAuthState, 
   fetchLatestBaileysVersion,
   WASocket,
+  WAVersion,
 } from '@whiskeysockets/baileys';
 import * as qrcode from 'qrcode';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -50,7 +51,7 @@ export class WhatsappService implements OnModuleInit {
 
     try {
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
-      const { version, isLatest } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307], isLatest: false }));
+      const { version, isLatest } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] as WAVersion, isLatest: false }));
       
       this.logger.log(`Using WhatsApp v${version.join('.')} (latest: ${isLatest}) for ${type}`);
 
