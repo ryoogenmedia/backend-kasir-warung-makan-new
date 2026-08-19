@@ -15,26 +15,41 @@ export class InfrastructureService {
   ) {}
 
   async getBranding() {
-    const logo = await this.prisma.systemSetting.findUnique({ where: { key: 'branding_logo' } });
-    const name = await this.prisma.systemSetting.findUnique({ where: { key: 'branding_name' } });
+    try {
+      const logo = await this.prisma.systemSetting.findUnique({ where: { key: 'branding_logo' } });
+      const name = await this.prisma.systemSetting.findUnique({ where: { key: 'branding_name' } });
 
-    return {
-      logo: logo?.value || null,
-      name: name?.value || 'RM Siantar Minang',
-    };
+      return {
+        logo: logo?.value || null,
+        name: name?.value || 'RM Siantar Minang',
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch branding from database', error);
+      return {
+        logo: null,
+        name: 'RM Siantar Minang',
+      };
+    }
   }
 
   async getSettings() {
-    const settings = await this.prisma.systemSetting.findMany();
-    const result = {};
-    settings.forEach(s => {
-      result[s.key] = s.value;
-    });
-    // Default DP percentage if not set
-    if (!result['reservation_dp_percent']) {
-      result['reservation_dp_percent'] = '50';
+    try {
+      const settings = await this.prisma.systemSetting.findMany();
+      const result = {};
+      settings.forEach(s => {
+        result[s.key] = s.value;
+      });
+      // Default DP percentage if not set
+      if (!result['reservation_dp_percent']) {
+        result['reservation_dp_percent'] = '50';
+      }
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to fetch system settings from database', error);
+      return {
+        reservation_dp_percent: '50',
+      };
     }
-    return result;
   }
 
   async updateSetting(key: string, value: string, actorId?: bigint) {

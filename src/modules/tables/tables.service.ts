@@ -7,13 +7,23 @@ export class TablesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.table.findMany();
+    try {
+      return await this.prisma.table.findMany();
+    } catch (error) {
+      console.error('Error fetching tables from database:', error);
+      return [];
+    }
   }
 
   async findOne(id: bigint) {
-    return this.prisma.table.findUnique({
-      where: { id },
-    });
+    try {
+      return await this.prisma.table.findUnique({
+        where: { id },
+      });
+    } catch (error) {
+      console.error('Error fetching table from database:', error);
+      return null;
+    }
   }
 
   async create(data: { name: string, capacity?: number }) {

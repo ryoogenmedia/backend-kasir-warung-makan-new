@@ -6,13 +6,23 @@ export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.category.findMany();
+    try {
+      return await this.prisma.category.findMany();
+    } catch (error) {
+      console.error('Error fetching categories from database:', error);
+      return [];
+    }
   }
 
   async findOne(id: bigint) {
-    return this.prisma.category.findUnique({
-      where: { id },
-    });
+    try {
+      return await this.prisma.category.findUnique({
+        where: { id },
+      });
+    } catch (error) {
+      console.error('Error fetching category from database:', error);
+      return null;
+    }
   }
 
   async create(data: { name: string }) {
