@@ -21,6 +21,7 @@ COPY . .
 
 RUN npx prisma generate
 RUN npm run build
+RUN npx tsc --outDir dist --module commonjs --target ES2023 --esModuleInterop true --skipLibCheck true prisma/seed.ts prisma/seeders/*.ts || true
 RUN test -f /app/dist/src/main.js
 
 FROM node:22-alpine AS runner
@@ -34,7 +35,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Ensure uploads, auth dirs exist and grant full ownership of /app to node user
 RUN mkdir -p uploads/menus uploads/promos uploads/payments uploads/branding \
