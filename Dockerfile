@@ -35,6 +35,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Ensure uploads, auth dirs exist and grant full ownership of /app to node user
 RUN mkdir -p uploads/menus uploads/promos uploads/payments uploads/branding \

@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import mariadb from 'mariadb';
 import 'dotenv/config';
 
 import { seedCategories } from './seeders/CategorySeeder';
@@ -11,7 +13,15 @@ import { seedActiveData } from './seeders/ActiveDataSeeder';
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not defined');
 }
-const prisma = new PrismaClient();
+
+const pool = mariadb.createPool({
+  uri: process.env.DATABASE_URL,
+  connectionLimit: 5,
+  acquireTimeout: 60000,
+  connectTimeout: 15000,
+});
+const adapter = new PrismaMariaDb(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function cleanDatabase() {
   console.log('🗑️ Cleaning database...');
@@ -64,6 +74,7 @@ async function main() {
     process.exit(1);
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 
