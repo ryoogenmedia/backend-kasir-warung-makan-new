@@ -12,9 +12,12 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: any) {
+    if (!body || !body.email || !body.password) {
+      throw new UnauthorizedException('Email dan password wajib diisi');
+    }
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email atau password salah');
     }
     return this.authService.login(user);
   }
