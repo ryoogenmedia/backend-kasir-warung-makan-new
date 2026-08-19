@@ -31,77 +31,104 @@ export class WhatsappService implements OnModuleInit {
   ) {}
 
 
+  private reconnectTimeouts: Record<string, any> = {};
+
   async onModuleInit() {
-    // We use different session folders to avoid conflicts
-    await this.initializeClient('sender', './.baileys_auth_sender');
-    await this.initializeClient('receiver', './.baileys_auth_receiver');
+    try {
+      await this.initializeClient('sender', './.baileys_auth_sender');
+      await this.initializeClient('receiver', './.baileys_auth_receiver');
+    } catch (err) {
+      this.logger.error('Failed to initialize WhatsApp clients on module init', err);
+    }
   }
 
   private async initializeClient(type: 'sender' | 'receiver', authPath: string) {
-    const { state, saveCreds } = await useMultiFileAuthState(authPath);
-    const { version, isLatest } = await fetchLatestBaileysVersion();
-    
-    this.logger.log(`Using WhatsApp v${version.join('.')} (latest: ${isLatest}) for ${type}`);
+    if (this.reconnectTimeouts[type]) {
+      clearTimeout(this.reconnectTimeouts[type]);
+      this.reconnectTimeouts[type] = null;
+    }
 
-    const client = makeWASocket({
-      version,
-      printQRInTerminal: false,
-      auth: state,
-      logger: pino({ level: 'silent' }),
-      browser: ['Siantar Minang', 'Chrome', '1.0.0'],
-    });
+    try {
+      const { state, saveCreds } = await useMultiFileAuthState(authPath);
+      const { version, isLatest } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307], isLatest: false }));
+      
+      this.logger.log(`Using WhatsApp v${version.join('.')} (latest: ${isLatest}) for ${type}`);
 
-    if (type === 'sender') this.senderClient = client;
-    else this.receiverClient = client;
-
-    client.ev.on('creds.update', saveCreds);
-
-    client.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr } = update;
-
-      if (qr) {
-        this.logger.log(`WhatsApp QR Code received for ${type}`);
-        qrcode.toDataURL(qr, (err, url) => {
-          if (type === 'sender') this.senderState.qrCode = url;
-          else this.receiverState.qrCode = url;
-        });
+      // Close previous client if exists to prevent memory leaks
+      if (type === 'sender' && this.senderClient) {
+        try { this.senderClient.end(undefined); } catch (e) {}
+      } else if (type === 'receiver' && this.receiverClient) {
+        try { this.receiverClient.end(undefined); } catch (e) {}
       }
 
-      if (connection === 'close') {
-        const error = (lastDisconnect?.error as Boom);
-        const shouldReconnect = error?.output?.statusCode !== DisconnectReason.loggedOut;
-        this.logger.warn(`WhatsApp Client (${type}) closed. Reconnecting: ${shouldReconnect}. Reason: ${error?.message || error || 'Unknown'}`);
-        
-        if (type === 'sender') {
-          this.senderState.isReady = false;
-          this.senderState.qrCode = null;
-        } else {
-          this.receiverState.isReady = false;
-          this.receiverState.qrCode = null;
+      const client = makeWASocket({
+        version,
+        printQRInTerminal: false,
+        auth: state,
+        logger: pino({ level: 'silent' }),
+        browser: ['Siantar Minang', 'Chrome', '1.0.0'],
+      });
+
+      if (type === 'sender') this.senderClient = client;
+      else this.receiverClient = client;
+
+      client.ev.on('creds.update', saveCreds);
+
+      client.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+          this.logger.log(`WhatsApp QR Code received for ${type}`);
+          qrcode.toDataURL(qr, (err, url) => {
+            if (type === 'sender') this.senderState.qrCode = url;
+            else this.receiverState.qrCode = url;
+          });
         }
 
-        if (shouldReconnect) {
-          this.initializeClient(type, authPath);
-        }
-      } else if (connection === 'open') {
-        this.logger.log(`WhatsApp Client (${type}) is ready!`);
-        if (type === 'sender') {
-          this.senderState.qrCode = null;
-          this.senderState.isReady = true;
-        } else {
-          this.receiverState.qrCode = null;
-          this.receiverState.isReady = true;
+        if (connection === 'close') {
+          const error = (lastDisconnect?.error as Boom);
+          const shouldReconnect = error?.output?.statusCode !== DisconnectReason.loggedOut;
+          this.logger.warn(`WhatsApp Client (${type}) closed. Reconnecting: ${shouldReconnect}. Reason: ${error?.message || error || 'Unknown'}`);
+          
+          if (type === 'sender') {
+            this.senderState.isReady = false;
+            this.senderState.qrCode = null;
+          } else {
+            this.receiverState.isReady = false;
+            this.receiverState.qrCode = null;
+          }
 
-          // Auto-detect number for receiver
-          const user = client.user?.id;
-          if (user) {
-            const number = user.split(':')[0].split('@')[0];
-            this.logger.log(`Detected Receiver Number: ${number}`);
-            await this.updateAdminNumber(number);
+          if (shouldReconnect) {
+            // Schedule reconnect with 15s delay to prevent memory leak & infinite loop
+            if (!this.reconnectTimeouts[type]) {
+              this.reconnectTimeouts[type] = setTimeout(() => {
+                this.reconnectTimeouts[type] = null;
+                this.initializeClient(type, authPath);
+              }, 15000);
+            }
+          }
+        } else if (connection === 'open') {
+          this.logger.log(`WhatsApp Client (${type}) is ready!`);
+          if (type === 'sender') {
+            this.senderState.qrCode = null;
+            this.senderState.isReady = true;
+          } else {
+            this.receiverState.qrCode = null;
+            this.receiverState.isReady = true;
+
+            // Auto-detect number for receiver
+            const user = client.user?.id;
+            if (user) {
+              const number = user.split(':')[0].split('@')[0];
+              this.logger.log(`Detected Receiver Number: ${number}`);
+              await this.updateAdminNumber(number);
+            }
           }
         }
-      }
-    });
+      });
+    } catch (err) {
+      this.logger.error(`Error initializing WhatsApp client (${type})`, err);
+    }
   }
 
   private async updateAdminNumber(number: string) {
