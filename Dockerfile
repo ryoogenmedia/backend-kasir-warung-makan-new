@@ -47,4 +47,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma db push --skip-generate || true; node dist/src/main.js"]
+CMD ["node", "dist/src/main.js"]
