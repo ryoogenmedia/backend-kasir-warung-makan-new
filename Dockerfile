@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # Install dependencies separately so Docker can reuse this layer when only
 # application source files change.
 FROM node:22-alpine AS dependencies
